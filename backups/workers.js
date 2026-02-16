@@ -1,4 +1,4 @@
-// Storage Script (Last Working Version / Feb. 15th, 2026)
+// Storage
 
 export default {
   async fetch(request, env) {
@@ -9,29 +9,32 @@ export default {
       "Access-Control-Allow-Headers": "*",
     };
 
-    // Respond to browser pre-checks
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-    // THE SAVE LOGIC
+    // SAVE (Deposit)
     if (url.pathname.includes("save")) {
-      try {
-        const bodyText = await request.text();
-        const params = new URLSearchParams(bodyText);
-        
-        // Use fallbacks if the form parsing fails
-        const id = params.get("id") || "UnknownPlayer";
-        const data = params.get("data") || "NoData";
-
-        await env.POKEMON_STORAGE.put(id, data);
-        
-        return new Response("OK", { status: 200, headers: corsHeaders });
-      } catch (e) {
-        return new Response("Error: " + e.message, { status: 200, headers: corsHeaders });
-      }
+      const bodyText = await request.text();
+      const params = new URLSearchParams(bodyText);
+      const id = params.get("id");
+      const data = params.get("data");
+      await env.POKEMON_STORAGE.put(id, data);
+      return new Response("OK", { headers: corsHeaders });
     }
 
-    return new Response("GBA Online", { headers: corsHeaders });
+    // GET (Withdrawal part 1)
+    if (url.pathname.includes("get")) {
+      const id = url.searchParams.get("id");
+      const data = await env.POKEMON_STORAGE.get(id);
+      return new Response(data || "NOT_FOUND", { headers: corsHeaders });
+    }
+
+    // DELETE (Withdrawal part 2 - Anti-Cloning)
+    if (url.pathname.includes("delete")) {
+      const id = url.searchParams.get("id");
+      await env.POKEMON_STORAGE.delete(id);
+      return new Response("DELETED", { headers: corsHeaders });
+    }
+
+    return new Response("GBA Online Active", { headers: corsHeaders });
   }
 };
-
-// 
