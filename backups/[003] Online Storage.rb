@@ -1,7 +1,6 @@
 #===============================================================================
 # Global Battle Agency / Online Trading
 #===============================================================================
-
 module GlobalBattleAgency
   API_URL = "https://global-battle-agency.kirbywithaz.workers.dev"
 
@@ -16,7 +15,7 @@ module GlobalBattleAgency
     return pbMessage(_INTL("No Pokemon found in slot {1}!", slot + 1)) if !pkmn
     return pbMessage(_INTL("You can't deposit your last Pokemon!")) if $player.party.length <= 1
 
-    # Marshal DNA packing
+    # Marshal DNA packing: converts the whole Pokemon object to a text string
     pokemon_dna = [Marshal.dump(pkmn)].pack("m0")
 
     payload = {
@@ -43,7 +42,10 @@ module GlobalBattleAgency
 
   # WITHDRAW: Pulls Pokemon from Cloud and deletes the cloud copy
   def self.download_pokemon
-    return pbMessage(_INTL("Your party is full!")) if $player.party_full?
+    # Pre-check: Don't download if party is full
+    if $player.party_full?
+      return pbMessage(_INTL("Your party is full! Make some room first."))
+    end
     
     pbMessage(_INTL("Accessing the GBA cloud..."))
     id = self.get_master_key
@@ -58,8 +60,8 @@ module GlobalBattleAgency
         decoded_data = data.unpack("m0")[0]
         pkmn = Marshal.load(decoded_data)
         
-        # 3. Add to party
-        pbAddPokemon(pkmn)
+        # 3. SILENT ADD: Just pushes the existing object back into the party array
+        $player.party.push(pkmn)
         
         # 4. Anti-Cloning: Tell the server to delete the cloud copy
         HTTPLite.get("#{API_URL}/delete?id=#{id}")
@@ -70,7 +72,7 @@ module GlobalBattleAgency
       end
     rescue Exception => e
       echoln "GBA Error: #{e.message}"
-      pbMessage(_INTL("Connection failed!"))
+      pbMessage(_INTL("Connection failed! Check your internet."))
     end
   end
 end
