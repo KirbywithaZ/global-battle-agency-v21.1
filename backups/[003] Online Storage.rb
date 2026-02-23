@@ -1,97 +1,66 @@
 #===============================================================================
-# Global Battle Agency / Online Trading
+# Global Battle Agency (GBA) / Online Storage Module (v21.1)
+#===============================================================================
+# Author: KirbyWithAz
+# Purpose: Handles Pokémon cloud storage, retrieval, and cross-game access
+#          via the Reunion System. Includes multi-deposit, cloud upload/download,
+#          and local identity tracking.
+# Version: 21.1
 #===============================================================================
 
 module GlobalBattleAgency
-  API_URL = "https://global-battle-agency.kirbywithaz.workers.dev"
-  
-  # --- CONFIGURATION ---
-  STUDIO_NAME   = "KirbyWithAz_Games" 
+  #===========================================================================
+  # Configuration
+  #===========================================================================
+  API_URL       = "https://global-battle-agency.kirbywithaz.workers.dev"
+  STUDIO_NAME   = "KirbyWithAz_Games"
   SHARED_FOLDER = ENV['AppData'] + "/#{STUDIO_NAME}/"
   IDENTITY_FILE = SHARED_FOLDER + "gba_registry.txt"
 
-  #-----------------------------------------------------------------------------
-  # Configuration
-  #-----------------------------------------------------------------------------
-  
+  #===========================================================================
+  # Identity Management
+  #===========================================================================
+
+  #---------------------------------------------------------------------------
+  # Master Key
+  #---------------------------------------------------------------------------
+  # Generates a unique master key for the current player
   def self.get_master_key
-    return "#{$player.name}_#{$player.id}"
+    "#{$player.name}_#{$player.id}"
   end
 
-  # Saves the current game's identity into a shared studio map
+  #---------------------------------------------------------------------------
+  # Local Identity Storage
+  #---------------------------------------------------------------------------
+  # Records this save file's ID so other games can find it
   def self.save_identity_locally
     begin
-      Dir.mkdir(SHARED_FOLDER) if !File.exists?(SHARED_FOLDER)
-      
+      Dir.mkdir(SHARED_FOLDER) unless File.exists?(SHARED_FOLDER)
       registry = {}
       if File.exists?(IDENTITY_FILE)
         begin
-          registry = eval(File.read(IDENTITY_FILE))
+          content = File.read(IDENTITY_FILE)
+          registry = eval(content) if content.include?("{")
         rescue
           registry = {}
         end
       end
-
-      # Logs the ID under the specific game title from Game.ini
       registry[System.game_title] = self.get_master_key
-      
       File.open(IDENTITY_FILE, "w") { |f| f.write(registry.inspect) }
-      echoln "GBA: Identity linked locally for #{System.game_title}."
     rescue
       echoln "GBA: Failed to save local identity."
     end
   end
 
-  #-----------------------------------------------------------------------------
-  # Actual Storage Function
-  #-----------------------------------------------------------------------------
+  #===========================================================================
+  # Reunion System / Cross-Game Access
+  #===========================================================================
   
-  # Sends Pokémon to Cloud and removes from party.
-  def self.upload_pokemon(slot = 0)
-    pkmn = $player.party[slot]
-    return pbMessage(_INTL("No Pokemon found in slot {1}!", slot + 1)) if !pkmn
-    return pbMessage(_INTL("You can't deposit your last Pokemon!")) if $player.party.length <= 1
-
-    pokemon_dna = [Marshal.dump(pkmn)].pack("m0")
-    payload = { "id" => self.get_master_key, "data" => pokemon_dna }
-
-    pbMessage(_INTL("Sending {1} to the GBA cloud...", pkmn.name))
-
-    begin
-      response = HTTPLite.post("#{API_URL}/save", payload)
-      if response[:body] && response[:body].include?("OK")
-        $player.party.delete_at(slot)
-        
-        # Automatically update registry on success.
-        self.save_identity_locally 
-        
-        pbMessage(_INTL("Success! {1} has been moved to the cloud.", pkmn.name))
-      else
-        pbMessage(_INTL("The cloud is full! Try again later."))
-      end
-    rescue Exception => e
-      echoln "GBA Error: #{e.message}"
-      pbMessage(_INTL("Failed to connect to the GBA cloud."))
-    end
-  end
-
-  # Pulls Pokemon from Cloud and deletes the cloud copy.
-  def self.download_pokemon
-    if $player.party_full?
-      return pbMessage(_INTL("Your party is full! Make some room first."))
-    end
-    
-    pbMessage(_INTL("Accessing the GBA cloud..."))
-    id = self.get_master_key
-    
-    self.fetch_and_load(id)
-  end
-
-  #-----------------------------------------------------------------------------
-  # Reunion System
-  #-----------------------------------------------------------------------------
-
-  # Detects and imports Pokemon from other games in the studio folder.
+  #---------------------------------------------------------------------------
+  # Auto-Invite Legacy
+  #---------------------------------------------------------------------------
+  # Scans for other game IDs registered in the studio folder
+  # Allows players to access past game clouds
   def self.auto_invite_legacy
     if $player.party_full?
       return pbMessage(_INTL("Your party is full!"))
@@ -100,14 +69,13 @@ module GlobalBattleAgency
     if File.exists?(IDENTITY_FILE)
       begin
         registry = eval(File.read(IDENTITY_FILE))
-        
-        # Excludes the current game from the selection list.
-        registry.delete(System.game_title)
+        registry.delete(System.game_title) # Skip current game
 
         if registry.empty?
           return pbMessage(_INTL("No other local game records were found."))
         end
 
+        # Display available past journeys
         commands = registry.keys
         choice = pbMessage(_INTL("Past journeys detected! Which record should be accessed?"), commands, -1)
         
@@ -126,32 +94,141 @@ module GlobalBattleAgency
     end
   end
 
-  #-----------------------------------------------------------------------------
-  # Data Handler
-  #-----------------------------------------------------------------------------
-  
-  # The actual "Worker" that talks to the server to get data.
+  #===========================================================================
+  # Upload / Deposit Pokémon
+  #===========================================================================
+
+  #---------------------------------------------------------------------------
+  # Multi-Deposit Logic
+  #---------------------------------------------------------------------------
+  # Allows the player to select and deposit multiple Pokémon into the cloud
+  def self.upload_pokemon
+    if $player.party.length <= 1
+      return pbMessage(_INTL("You must keep at least one Pokémon in your party!"))
+    end
+
+    selected_indices = []
+
+    #-----------------------------------------------------------------------
+    # Selection Loop
+    #-----------------------------------------------------------------------
+    loop do
+      break if selected_indices.length >= 5
+      break if ($player.party.length - selected_indices.length) <= 1
+
+      msg = selected_indices.empty? ? 
+            _INTL("Select a Pokémon to deposit.") : 
+            _INTL("{1} selected. Select another or press B to finish.", selected_indices.length)
+
+      pbChoosePokemon(1, 2, proc { |pkmn| !pkmn.egg? })
+      idx = pbGet(1)
+
+      if idx < 0
+        break if selected_indices.any?
+        return
+      end
+
+      if selected_indices.include?(idx)
+        pbMessage(_INTL("That Pokémon is already selected!"))
+      else
+        selected_indices.push(idx)
+        pbMessage(_INTL("Added to the deposit list.")) if selected_indices.length == 1
+      end
+    end
+
+    return if selected_indices.empty?
+
+    #-----------------------------------------------------------------------
+    # Confirmation Step
+    #-----------------------------------------------------------------------
+    confirm_msg = selected_indices.length == 1 ? 
+                  _INTL("Deposit this Pokémon into the cloud?") : 
+                  _INTL("Deposit these {1} Pokémon into the cloud?", selected_indices.length)
+
+    if pbConfirmMessage(confirm_msg)
+      pbMessage(_INTL("Connecting to the GBA cloud..."))
+
+      #---------------------------------------------------------------------
+      # Serialization & Payload
+      #---------------------------------------------------------------------
+      sending_party = selected_indices.map { |i| $player.party[i] }
+      pokemon_dna = [Marshal.dump(sending_party)].pack("m0")
+      payload = { "id" => self.get_master_key, "data" => pokemon_dna }
+
+      #---------------------------------------------------------------------
+      # Cloud Upload
+      #---------------------------------------------------------------------
+      begin
+        response = HTTPLite.post("#{API_URL}/save", payload)
+        if response[:body]&.include?("OK")
+          # Remove deposited Pokémon from party
+          selected_indices.sort.reverse_each { |i| $player.party.delete_at(i) }
+          self.save_identity_locally
+
+          # Success message
+          msg = selected_indices.length == 1 ? 
+                _INTL("Success! The Pokémon was moved to the cloud.") : 
+                _INTL("Success! The Pokémon were moved to the cloud.")
+          pbMessage(msg)
+        else
+          pbMessage(_INTL("Cloud error. Please try again later."))
+        end
+      rescue Exception => e
+        pbMessage(_INTL("Connection failed!"))
+      end
+    end
+  end
+
+  #===========================================================================
+  # Withdrawal & Retrieval
+  #===========================================================================
+
+  #---------------------------------------------------------------------------
+  # Download Pokémon
+  #---------------------------------------------------------------------------
+  # Retrieves Pokémon from the cloud and adds them to the player's party
+  def self.download_pokemon
+    pbMessage(_INTL("Accessing the GBA cloud..."))
+    self.fetch_and_load(self.get_master_key)
+  end
+
+  #---------------------------------------------------------------------------
+  # Fetch & Load Logic
+  #---------------------------------------------------------------------------
+  # Fetches stored Pokémon from the cloud and loads them into the party
   def self.fetch_and_load(target_id)
     begin
       response = HTTPLite.get("#{API_URL}/get?id=#{target_id}")
       data = response[:body]
 
       if data && data != "NOT_FOUND" && !data.include?("Error")
-        decoded_data = data.unpack("m0")[0]
-        pkmn = Marshal.load(decoded_data)
-        $player.party.push(pkmn)
-        
-        # Clean up the cloud after a successful transfer.
+        decoded = data.unpack("m0")[0]
+        pkmn_data = Marshal.load(decoded)
+
+        new_arrivals = pkmn_data.is_a?(Array) ? pkmn_data : [pkmn_data]
+        count = new_arrivals.length
+
+        # Check party capacity
+        if ($player.party.length + count) > 6
+          return pbMessage(_INTL("Not enough room in the party for {1} Pokémon!", count))
+        end
+
+        # Add Pokémon to party
+        new_arrivals.each { |p| $player.party.push(p) }
+
+        # Cleanup cloud storage
         HTTPLite.get("#{API_URL}/delete?id=#{target_id}")
-        
-        pbMessage(_INTL("Welcome back, {1}!", pkmn.name))
+
+        # Success message
+        msg = count == 1 ? 
+              _INTL("Transfer complete! The Pokémon has returned.") : 
+              _INTL("Transfer complete! The Pokémon have returned.")
+        pbMessage(msg)
       else
-        pbMessage(_INTL("No Pokemon were found in that cloud locker."))
+        pbMessage(_INTL("No Pokémon found in that locker."))
       end
     rescue Exception => e
-      echoln "GBA Error: #{e.message}"
-      pbMessage(_INTL("Connection failed! Check your internet."))
+      pbMessage(_INTL("Connection error."))
     end
   end
-
 end
