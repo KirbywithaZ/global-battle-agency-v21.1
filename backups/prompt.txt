@@ -1,0 +1,513 @@
+I'm making a plugin for Pokemon Essentials that allows for connection to the internet, enabling Online Storage, Online Trading, and Online Battling, as well as other features.
+
+
+
+The Plugin is called the Global Battle Agency (v21.1)
+
+
+
+The project uses Supabase (https://supabase.com), Cloudflare Workers, Pokemon Essentials and RPGXP.
+
+
+
+Currently, I am on Online Storage.
+
+
+
+The code for Online Storage is this:
+
+#===============================================================================
+
+# Global Battle Agency / Online Trading
+
+#===============================================================================
+
+
+
+module GlobalBattleAgency
+
+  API_URL = "https://global-battle-agency.kirbywithaz.workers.dev"
+
+  
+
+  # --- CONFIGURATION ---
+
+  STUDIO_NAME   = "KirbyWithAz_Games" 
+
+  SHARED_FOLDER = ENV['AppData'] + "/#{STUDIO_NAME}/"
+
+  IDENTITY_FILE = SHARED_FOLDER + "gba_registry.txt"
+
+
+
+  #-----------------------------------------------------------------------------
+
+  # Configuration
+
+  #-----------------------------------------------------------------------------
+
+  
+
+  def self.get_master_key
+
+    return "#{$player.name}_#{$player.id}"
+
+  end
+
+
+
+  # Saves the current game's identity into a shared studio map
+
+  def self.save_identity_locally
+
+    begin
+
+      Dir.mkdir(SHARED_FOLDER) if !File.exists?(SHARED_FOLDER)
+
+      
+
+      registry = {}
+
+      if File.exists?(IDENTITY_FILE)
+
+        begin
+
+          registry = eval(File.read(IDENTITY_FILE))
+
+        rescue
+
+          registry = {}
+
+        end
+
+      end
+
+
+
+      # Logs the ID under the specific game title from Game.ini
+
+      registry[System.game_title] = self.get_master_key
+
+      
+
+      File.open(IDENTITY_FILE, "w") { |f| f.write(registry.inspect) }
+
+      echoln "GBA: Identity linked locally for #{System.game_title}."
+
+    rescue
+
+      echoln "GBA: Failed to save local identity."
+
+    end
+
+  end
+
+
+
+  #-----------------------------------------------------------------------------
+
+  # Actual Storage Function
+
+  #-----------------------------------------------------------------------------
+
+  
+
+  # Sends Pokémon to Cloud and removes from party.
+
+  def self.upload_pokemon(slot = 0)
+
+    pkmn = $player.party[slot]
+
+    return pbMessage(_INTL("No Pokemon found in slot {1}!", slot + 1)) if !pkmn
+
+    return pbMessage(_INTL("You can't deposit your last Pokemon!")) if $player.party.length <= 1
+
+
+
+    pokemon_dna = [Marshal.dump(pkmn)].pack("m0")
+
+    payload = { "id" => self.get_master_key, "data" => pokemon_dna }
+
+
+
+    pbMessage(_INTL("Sending {1} to the GBA cloud...", pkmn.name))
+
+
+
+    begin
+
+      response = HTTPLite.post("#{API_URL}/save", payload)
+
+      if response[:body] && response[:body].include?("OK")
+
+        $player.party.delete_at(slot)
+
+        
+
+        # Automatically update registry on success.
+
+        self.save_identity_locally 
+
+        
+
+        pbMessage(_INTL("Success! {1} has been moved to the cloud.", pkmn.name))
+
+      else
+
+        pbMessage(_INTL("The cloud is full! Try again later."))
+
+      end
+
+    rescue Exception => e
+
+      echoln "GBA Error: #{e.message}"
+
+      pbMessage(_INTL("Failed to connect to the GBA cloud."))
+
+    end
+
+  end
+
+
+
+  # Pulls Pokemon from Cloud and deletes the cloud copy.
+
+  def self.download_pokemon
+
+    if $player.party_full?
+
+      return pbMessage(_INTL("Your party is full! Make some room first."))
+
+    end
+
+    
+
+    pbMessage(_INTL("Accessing the GBA cloud..."))
+
+    id = self.get_master_key
+
+    
+
+    self.fetch_and_load(id)
+
+  end
+
+
+
+  #-----------------------------------------------------------------------------
+
+  # Reunion System
+
+  #-----------------------------------------------------------------------------
+
+
+
+  # Detects and imports Pokemon from other games in the studio folder.
+
+  def self.auto_invite_legacy
+
+    if $player.party_full?
+
+      return pbMessage(_INTL("Your party is full!"))
+
+    end
+
+
+
+    if File.exists?(IDENTITY_FILE)
+
+      begin
+
+        registry = eval(File.read(IDENTITY_FILE))
+
+        
+
+        # Excludes the current game from the selection list.
+
+        registry.delete(System.game_title)
+
+
+
+        if registry.empty?
+
+          return pbMessage(_INTL("No other local game records were found."))
+
+        end
+
+
+
+        commands = registry.keys
+
+        choice = pbMessage(_INTL("Past journeys detected! Which record should be accessed?"), commands, -1)
+
+        
+
+        if choice >= 0
+
+          target_game = commands[choice]
+
+          legacy_id = registry[target_game]
+
+          pbMessage(_INTL("Accessing the cloud for {1}...", target_game))
+
+          self.fetch_and_load(legacy_id)
+
+        end
+
+      rescue Exception => e
+
+        echoln "GBA Reunion Error: #{e.message}"
+
+        pbMessage(_INTL("The identity registry is corrupted."))
+
+      end
+
+    else
+
+      pbMessage(_INTL("No records of a past journey found on this device."))
+
+    end
+
+  end
+
+
+
+  #-----------------------------------------------------------------------------
+
+  # Data Handler
+
+  #-----------------------------------------------------------------------------
+
+  
+
+  # The actual "Worker" that talks to the server to get data.
+
+  def self.fetch_and_load(target_id)
+
+    begin
+
+      response = HTTPLite.get("#{API_URL}/get?id=#{target_id}")
+
+      data = response[:body]
+
+
+
+      if data && data != "NOT_FOUND" && !data.include?("Error")
+
+        decoded_data = data.unpack("m0")[0]
+
+        pkmn = Marshal.load(decoded_data)
+
+        $player.party.push(pkmn)
+
+        
+
+        # Clean up the cloud after a successful transfer.
+
+        HTTPLite.get("#{API_URL}/delete?id=#{target_id}")
+
+        
+
+        pbMessage(_INTL("Welcome back, {1}!", pkmn.name))
+
+      else
+
+        pbMessage(_INTL("No Pokemon were found in that cloud locker."))
+
+      end
+
+    rescue Exception => e
+
+      echoln "GBA Error: #{e.message}"
+
+      pbMessage(_INTL("Connection failed! Check your internet."))
+
+    end
+
+  end
+
+
+
+end
+
+
+
+and the Cloudflare Workers code is this:
+
+
+
+export default {
+
+  async fetch(request, env) {
+
+    const url = new URL(request.url);
+
+    const SUPABASE_URL = env.SUPABASE_URL;
+
+    const SUPABASE_KEY = env.SUPABASE_KEY;
+
+
+
+    const corsHeaders = {
+
+      "Access-Control-Allow-Origin": "*",
+
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+
+      "Access-Control-Allow-Headers": "*",
+
+    };
+
+
+
+    if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+
+
+    // --- STATISTICS (Count Total Pokemon in Cloud) ---
+
+    if (url.pathname.includes("stats")) {
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/gba_storage?select=id`, {
+
+        method: "HEAD", 
+
+        headers: {
+
+          "apikey": SUPABASE_KEY,
+
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+
+          "Prefer": "count=exact"
+
+        }
+
+      });
+
+      // Pulls count from the Content-Range header (e.g., "0-0/42")
+
+      const count = response.headers.get("Content-Range").split("/")[1] || "0";
+
+      return new Response(count, { headers: corsHeaders });
+
+    }
+
+
+
+    // --- DEPOSIT (Save to Supabase) ---
+
+    if (url.pathname.includes("save")) {
+
+      const bodyText = await request.text();
+
+      const params = new URLSearchParams(bodyText);
+
+      const id = params.get("id");
+
+      const data = params.get("data");
+
+
+
+      await fetch(`${SUPABASE_URL}/rest/v1/gba_storage`, {
+
+        method: "POST",
+
+        headers: {
+
+          "apikey": SUPABASE_KEY,
+
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+
+          "Content-Type": "application/json",
+
+          "Prefer": "resolution=merge-upsert"
+
+        },
+
+        body: JSON.stringify({ id: id, data: data })
+
+      });
+
+
+
+      return new Response("OK", { headers: corsHeaders });
+
+    }
+
+
+
+    // --- WITHDRAW (Get from Supabase) ---
+
+    if (url.pathname.includes("get")) {
+
+      const id = url.searchParams.get("id");
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/gba_storage?id=eq.${id}&select=data`, {
+
+        headers: {
+
+          "apikey": SUPABASE_KEY,
+
+          "Authorization": `Bearer ${SUPABASE_KEY}`
+
+        }
+
+      });
+
+      const result = await response.json();
+
+      const data = result.length > 0 ? result[0].data : "NOT_FOUND";
+
+      return new Response(data, { headers: corsHeaders });
+
+    }
+
+
+
+    // --- DELETE (Anti-Cloning) ---
+
+    if (url.pathname.includes("delete")) {
+
+      const id = url.searchParams.get("id");
+
+      
+
+      // Safety check: Don't delete Mystery Gifts so everyone can claim them
+
+      if (id && id.startsWith("GIFT_")) {
+
+        return new Response("GIFT_RETAINED", { headers: corsHeaders });
+
+      }
+
+
+
+      await fetch(`${SUPABASE_URL}/rest/v1/gba_storage?id=eq.${id}`, {
+
+        method: "DELETE",
+
+        headers: {
+
+          "apikey": SUPABASE_KEY,
+
+          "Authorization": `Bearer ${SUPABASE_KEY}`
+
+        }
+
+      });
+
+      return new Response("DELETED", { headers: corsHeaders });
+
+    }
+
+
+
+    return new Response("GBA Online: Active", { headers: corsHeaders });
+
+  }
+
+};
+
+
+
+Tell me what you understand the code does, and what it actually does.
