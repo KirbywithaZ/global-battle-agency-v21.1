@@ -52,7 +52,7 @@ module GlobalBattleAgency
   #---------------------------------------------------------------------------
   def self.open_redemption_menu
     # Corrected for v20+
-    code = pbEnterText(_INTL("Mystery Gift Code?"), 0, 20)
+    code = pbEnterText(_INTL("Mystery Gift Code?"), 0, 13)
 
     if code && !code.strip.empty?
       claim_mystery_gift(code)
