@@ -3,103 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GBA | Developer Dashboard</title>
+    <title>GBA | Global Battle Agency</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: radial-gradient(circle at top left, #1a1a2e, #16213e); min-height: 100vh; color: white; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body { background: #0f172a; color: white; font-family: sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .gradient-text { background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hidden { display: none; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="min-h-screen">
 
-    <div id="app" class="max-w-4xl mx-auto">
-        <header class="flex justify-between items-center mb-10">
-            <div>
-                <h1 class="text-3xl font-bold tracking-tight text-blue-400">Global Battle Agency</h1>
-                <p class="text-slate-400">Mystery Gift Management Portal</p>
-            </div>
-            <div id="statusIndicator" class="px-3 py-1 rounded-full text-xs bg-red-900/30 text-red-400 border border-red-500/50">Disconnected</div>
-        </header>
-
-        <div id="authSection" class="glass p-8 rounded-2xl shadow-xl max-w-md mx-auto">
-            <h2 class="text-xl font-semibold mb-4">Developer Login</h2>
-            <p class="text-sm text-slate-400 mb-6">Enter your Developer Username to manage your gifts.</p>
-            <input type="text" id="devUsername" placeholder="Username" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-            <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-500 transition-colors font-bold py-3 rounded-lg">Access Dashboard</button>
+    <nav class="p-6 flex justify-between items-center max-w-6xl mx-auto">
+        <div class="text-2xl font-bold gradient-text cursor-pointer" onclick="showPage('landing')">GBA.Network</div>
+        <div id="navActions">
+            <button onclick="showPage('login')" class="text-slate-300 hover:text-white mr-4">Login</button>
+            <button onclick="showPage('register')" class="bg-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-500">Join Agency</button>
         </div>
+        <div id="navUser" class="hidden flex items-center gap-4">
+            <span id="displayUser" class="text-blue-400 font-mono"></span>
+            <button onclick="logout()" class="text-xs text-slate-500 hover:text-red-400">Logout</button>
+        </div>
+    </nav>
 
-        <div id="dashboardSection" class="hidden space-y-8">
-            
-            <div class="glass p-6 rounded-2xl">
-                <h2 class="text-xl font-semibold mb-4 text-blue-300">Create New Mystery Gift</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Gift Code</label>
-                        <input type="text" id="giftCode" placeholder="e.g. PIKACHU2026" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 outline-none focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Marshal Data (From Console)</label>
-                        <input type="text" id="giftData" placeholder="Paste encoded string..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 outline-none focus:border-blue-500">
-                    </div>
+    <section id="page-landing" class="max-w-4xl mx-auto py-20 px-6 text-center">
+        <h1 class="text-5xl md:text-7xl font-extrabold mb-6">Connect Your <span class="gradient-text">Essentials</span> Game.</h1>
+        <p class="text-slate-400 text-xl mb-10">The Global Battle Agency provides the cloud infrastructure for online trading, storage, and mystery gifts.</p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <button onclick="showPage('register')" class="bg-white text-black px-8 py-3 rounded-full font-bold text-lg hover:bg-slate-200">Get Started</button>
+            <a href="https://github.com/YOUR_GITHUB/YOUR_REPO" class="glass px-8 py-3 rounded-full font-bold text-lg">View Documentation</a>
+        </div>
+    </section>
+
+    <section id="page-login" class="hidden max-w-md mx-auto py-20 px-6">
+        <div class="glass p-8 rounded-3xl">
+            <h2 class="text-2xl font-bold mb-2 text-center">Welcome Back</h2>
+            <p class="text-slate-400 text-center mb-6">Enter your dev username</p>
+            <input type="text" id="loginUser" placeholder="Username" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
+            <button onclick="handleLogin()" class="w-full bg-blue-600 py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-blue-500/20">Login</button>
+        </div>
+    </section>
+
+    <section id="page-register" class="hidden max-w-md mx-auto py-20 px-6">
+        <div class="glass p-8 rounded-3xl">
+            <h2 class="text-2xl font-bold mb-2 text-center">Create Dev Account</h2>
+            <p class="text-slate-400 text-center mb-6">Pick a unique username to identify your gifts.</p>
+            <input type="text" id="regUser" placeholder="Desired Username" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
+            <button onclick="handleRegister()" class="w-full bg-green-600 py-4 rounded-xl font-bold">Create Account</button>
+        </div>
+    </section>
+
+    <section id="page-dashboard" class="hidden max-w-5xl mx-auto py-10 px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 space-y-6">
+                <div class="glass p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4">Create Mystery Gift</h3>
+                    <input type="text" id="giftCode" placeholder="Code (e.g. PIKA2026)" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-sm uppercase">
+                    <textarea id="giftData" rows="4" placeholder="Paste Marshal String..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-xs"></textarea>
+                    <button onclick="uploadGift()" class="w-full bg-blue-600 py-2 rounded-lg font-bold text-sm">Deploy to Cloud</button>
                 </div>
-                <button onclick="uploadGift()" class="mt-4 bg-green-600 hover:bg-green-500 px-6 py-2 rounded-lg font-bold transition-all">Publish Gift</button>
             </div>
-
-            <div class="glass rounded-2xl overflow-hidden">
-                <div class="p-6 border-b border-white/10">
-                    <h2 class="text-xl font-semibold">Active Live-Gifts</h2>
+            <div class="lg:col-span-2">
+                <div class="glass rounded-2xl overflow-hidden">
+                    <div class="p-6 bg-white/5 border-b border-white/5">
+                        <h3 class="font-bold">Live Mystery Gifts</h3>
+                    </div>
+                    <div id="giftList" class="divide-y divide-white/5 max-h-[500px] overflow-y-auto">
+                        </div>
                 </div>
-                <table class="w-full text-left">
-                    <thead class="bg-white/5 text-slate-400 text-sm">
-                        <tr>
-                            <th class="p-4">Code / ID</th>
-                            <th class="p-4">Data Preview</th>
-                            <th class="p-4 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="giftTableBody">
-                        </tbody>
-                </table>
             </div>
         </div>
-    </div>
+    </section>
 
     <script>
-        // CONFIG - Replace these with your actual Supabase details
+        // REPLACE THESE
         const SUPABASE_URL = 'YOUR_SUPABASE_URL';
         const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentDev = "";
+        let currentUser = localStorage.getItem('gba_user');
 
-        async function login() {
-            const user = document.getElementById('devUsername').value;
-            if (user.length < 3) return alert("Enter a valid username.");
+        // Page Router
+        function showPage(page) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`page-${page}`).classList.remove('hidden');
+            if (page === 'dashboard' && currentUser) loadGifts();
+        }
+
+        async function handleRegister() {
+            const user = document.getElementById('regUser').value.trim().toLowerCase();
+            if (user.length < 3) return alert("Username too short.");
+
+            const { error } = await supabase.from('gba_devs').insert([{ username: user }]);
+            if (error) return alert("Username taken or database error.");
             
-            currentDev = user;
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('dashboardSection').classList.remove('hidden');
-            document.getElementById('statusIndicator').innerText = `Logged in as: ${user}`;
-            document.getElementById('statusIndicator').className = "px-3 py-1 rounded-full text-xs bg-green-900/30 text-green-400 border border-green-500/50";
+            loginSuccess(user);
+        }
+
+        async function handleLogin() {
+            const user = document.getElementById('loginUser').value.trim().toLowerCase();
+            const { data } = await supabase.from('gba_devs').select('*').eq('username', user).single();
             
-            loadGifts();
+            if (!data) return alert("User not found.");
+            loginSuccess(user);
+        }
+
+        function loginSuccess(user) {
+            currentUser = user;
+            localStorage.setItem('gba_user', user);
+            document.getElementById('navActions').classList.add('hidden');
+            document.getElementById('navUser').classList.remove('hidden');
+            document.getElementById('displayUser').innerText = user;
+            showPage('dashboard');
+        }
+
+        function logout() {
+            localStorage.removeItem('gba_user');
+            location.reload();
         }
 
         async function uploadGift() {
-            const id = document.getElementById('giftCode').value.toUpperCase();
-            const data = document.getElementById('giftData').value;
+            const id = document.getElementById('giftCode').value.toUpperCase().trim();
+            const data = document.getElementById('giftData').value.trim();
+            if (!id || !data) return alert("Fill all fields");
 
-            if (!id || !data) return alert("Fill in all fields!");
+            const { error } = await supabase.from('gba_storage').upsert({ 
+                id: id, 
+                data: data, 
+                dev_owner: currentUser 
+            });
 
-            const { error } = await supabase
-                .from('gba_storage')
-                .upsert({ id: id, data: data, dev_owner: currentDev });
-
-            if (error) {
-                alert("Error: " + error.message);
-            } else {
-                alert("Gift successfully uploaded!");
+            if (error) alert(error.message);
+            else {
                 document.getElementById('giftCode').value = "";
                 document.getElementById('giftData').value = "";
                 loadGifts();
@@ -107,34 +143,34 @@
         }
 
         async function loadGifts() {
-            const { data, error } = await supabase
-                .from('gba_storage')
-                .select('*')
-                .eq('dev_owner', currentDev);
-
-            const tbody = document.getElementById('giftTableBody');
-            tbody.innerHTML = "";
-
-            if (data) {
-                data.forEach(gift => {
-                    tbody.innerHTML += `
-                        <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
-                            <td class="p-4 font-mono text-blue-400">${gift.id}</td>
-                            <td class="p-4 text-slate-500 text-xs truncate max-w-[200px]">${gift.data}</td>
-                            <td class="p-4 text-right">
-                                <button onclick="deleteGift('${gift.id}')" class="text-red-400 hover:text-red-200 text-sm font-semibold">Revoke</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
+            const { data } = await supabase.from('gba_storage').select('*').eq('dev_owner', currentUser);
+            const list = document.getElementById('giftList');
+            list.innerHTML = data?.length ? '' : '<p class="p-10 text-center text-slate-500">No active gifts found.</p>';
+            
+            data?.forEach(gift => {
+                list.innerHTML += `
+                    <div class="p-4 flex justify-between items-center hover:bg-white/5 transition">
+                        <div>
+                            <div class="font-bold text-blue-400">${gift.id}</div>
+                            <div class="text-xs text-slate-500 truncate w-48">${gift.data}</div>
+                        </div>
+                        <button onclick="deleteGift('${gift.id}')" class="text-red-500 text-xs font-bold hover:underline">Revoke</button>
+                    </div>
+                `;
+            });
         }
 
         async function deleteGift(id) {
-            if (!confirm(`Delete gift ${id}?`)) return;
-            await supabase.from('gba_storage').delete().eq('id', id);
-            loadGifts();
+            if (confirm("Revoke this gift?")) {
+                await supabase.from('gba_storage').delete().eq('id', id);
+                loadGifts();
+            }
         }
+
+        // Init
+        if (currentUser) loginSuccess(currentUser);
+        else showPage('landing');
+
     </script>
 </body>
 </html>
