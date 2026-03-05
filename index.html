@@ -10,7 +10,7 @@
         body { background: #0f172a; color: white; font-family: sans-serif; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .gradient-text { background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -23,89 +23,90 @@
         </div>
         <div id="navUser" class="hidden flex items-center gap-4">
             <span id="displayUser" class="text-blue-400 font-mono"></span>
-            <button onclick="logout()" class="text-xs text-slate-500 hover:text-red-400">Logout</button>
+            <button onclick="logout()" class="text-xs text-slate-500 hover:text-red-400 underline">Logout</button>
         </div>
     </nav>
 
     <section id="page-landing" class="max-w-4xl mx-auto py-20 px-6 text-center">
         <h1 class="text-5xl md:text-7xl font-extrabold mb-6">Connect Your <span class="gradient-text">Essentials</span> Game.</h1>
-        <p class="text-slate-400 text-xl mb-10">The Global Battle Agency provides the cloud infrastructure for online trading, storage, and mystery gifts.</p>
+        <p class="text-slate-400 text-xl mb-10">Cloud infrastructure for Pokémon Essentials v20/v21.</p>
         <div class="flex flex-wrap justify-center gap-4">
             <button onclick="showPage('register')" class="bg-white text-black px-8 py-3 rounded-full font-bold text-lg hover:bg-slate-200">Get Started</button>
-            <a href="https://github.com/YOUR_GITHUB/YOUR_REPO" class="glass px-8 py-3 rounded-full font-bold text-lg">View Documentation</a>
         </div>
     </section>
 
     <section id="page-login" class="hidden max-w-md mx-auto py-20 px-6">
         <div class="glass p-8 rounded-3xl">
-            <h2 class="text-2xl font-bold mb-2 text-center">Welcome Back</h2>
-            <p class="text-slate-400 text-center mb-6">Enter your dev username</p>
-            <input type="text" id="loginUser" placeholder="Username" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-            <button onclick="handleLogin()" class="w-full bg-blue-600 py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-blue-500/20">Login</button>
+            <h2 class="text-2xl font-bold mb-6 text-center">Developer Login</h2>
+            <input type="text" id="loginUser" placeholder="Username" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4 outline-none focus:border-blue-500">
+            <button onclick="handleLogin()" class="w-full bg-blue-600 py-4 rounded-xl font-bold hover:bg-blue-500">Login</button>
         </div>
     </section>
 
     <section id="page-register" class="hidden max-w-md mx-auto py-20 px-6">
         <div class="glass p-8 rounded-3xl">
-            <h2 class="text-2xl font-bold mb-2 text-center">Create Dev Account</h2>
-            <p class="text-slate-400 text-center mb-6">Pick a unique username to identify your gifts.</p>
-            <input type="text" id="regUser" placeholder="Desired Username" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-            <button onclick="handleRegister()" class="w-full bg-green-600 py-4 rounded-xl font-bold">Create Account</button>
+            <h2 class="text-2xl font-bold mb-6 text-center">Register</h2>
+            <input type="text" id="regUser" placeholder="Desired Username" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4 outline-none focus:border-green-500">
+            <button onclick="handleRegister()" class="w-full bg-green-600 py-4 rounded-xl font-bold hover:bg-green-500">Create Account</button>
         </div>
     </section>
 
     <section id="page-dashboard" class="hidden max-w-5xl mx-auto py-10 px-6">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1 space-y-6">
+            <div class="lg:col-span-1">
                 <div class="glass p-6 rounded-2xl">
                     <h3 class="text-lg font-bold mb-4">Create Mystery Gift</h3>
-                    <input type="text" id="giftCode" placeholder="Code (e.g. PIKA2026)" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-sm uppercase">
-                    <textarea id="giftData" rows="4" placeholder="Paste Marshal String..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-xs"></textarea>
-                    <button onclick="uploadGift()" class="w-full bg-blue-600 py-2 rounded-lg font-bold text-sm">Deploy to Cloud</button>
+                    <input type="text" id="giftCode" placeholder="GIFT_CODE" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-sm uppercase outline-none">
+                    <textarea id="giftData" rows="4" placeholder="Paste Marshal String..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-xs outline-none"></textarea>
+                    <button onclick="uploadGift()" class="w-full bg-blue-600 py-2 rounded-lg font-bold text-sm">Deploy</button>
                 </div>
             </div>
             <div class="lg:col-span-2">
                 <div class="glass rounded-2xl overflow-hidden">
                     <div class="p-6 bg-white/5 border-b border-white/5">
-                        <h3 class="font-bold">Live Mystery Gifts</h3>
+                        <h3 class="font-bold">Active Live-Gifts</h3>
                     </div>
-                    <div id="giftList" class="divide-y divide-white/5 max-h-[500px] overflow-y-auto">
-                        </div>
+                    <div id="giftList" class="divide-y divide-white/5"></div>
                 </div>
             </div>
         </div>
     </section>
 
     <script>
-        // REPLACE THESE
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Use unique variable names to avoid "Already declared" errors
+        const S_URL = 'YOUR_SUPABASE_URL';
+        const S_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const gbaClient = supabase.createClient(S_URL, S_KEY);
 
         let currentUser = localStorage.getItem('gba_user');
 
-        // Page Router
-        function showPage(page) {
-            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-            document.getElementById(`page-${page}`).classList.remove('hidden');
-            if (page === 'dashboard' && currentUser) loadGifts();
+        function showPage(pageId) {
+            console.log("Navigating to:", pageId);
+            const pages = ['landing', 'login', 'register', 'dashboard'];
+            pages.forEach(p => {
+                const el = document.getElementById(`page-${p}`);
+                if (el) el.classList.add('hidden');
+            });
+            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            
+            if (pageId === 'dashboard') loadGifts();
         }
 
         async function handleRegister() {
             const user = document.getElementById('regUser').value.trim().toLowerCase();
             if (user.length < 3) return alert("Username too short.");
 
-            const { error } = await supabase.from('gba_devs').insert([{ username: user }]);
-            if (error) return alert("Username taken or database error.");
+            const { error } = await gbaClient.from('gba_devs').insert([{ username: user }]);
+            if (error) return alert("Error: Username might be taken.");
             
             loginSuccess(user);
         }
 
         async function handleLogin() {
             const user = document.getElementById('loginUser').value.trim().toLowerCase();
-            const { data } = await supabase.from('gba_devs').select('*').eq('username', user).single();
+            const { data, error } = await gbaClient.from('gba_devs').select('*').eq('username', user).single();
             
-            if (!data) return alert("User not found.");
+            if (!data || error) return alert("User not found.");
             loginSuccess(user);
         }
 
@@ -120,7 +121,7 @@
 
         function logout() {
             localStorage.removeItem('gba_user');
-            location.reload();
+            window.location.reload();
         }
 
         async function uploadGift() {
@@ -128,7 +129,7 @@
             const data = document.getElementById('giftData').value.trim();
             if (!id || !data) return alert("Fill all fields");
 
-            const { error } = await supabase.from('gba_storage').upsert({ 
+            const { error } = await gbaClient.from('gba_storage').upsert({ 
                 id: id, 
                 data: data, 
                 dev_owner: currentUser 
@@ -143,34 +144,41 @@
         }
 
         async function loadGifts() {
-            const { data } = await supabase.from('gba_storage').select('*').eq('dev_owner', currentUser);
+            const { data } = await gbaClient.from('gba_storage').select('*').eq('dev_owner', currentUser);
             const list = document.getElementById('giftList');
-            list.innerHTML = data?.length ? '' : '<p class="p-10 text-center text-slate-500">No active gifts found.</p>';
+            list.innerHTML = '';
             
-            data?.forEach(gift => {
-                list.innerHTML += `
-                    <div class="p-4 flex justify-between items-center hover:bg-white/5 transition">
-                        <div>
-                            <div class="font-bold text-blue-400">${gift.id}</div>
-                            <div class="text-xs text-slate-500 truncate w-48">${gift.data}</div>
-                        </div>
-                        <button onclick="deleteGift('${gift.id}')" class="text-red-500 text-xs font-bold hover:underline">Revoke</button>
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p class="p-10 text-center text-slate-500">No active gifts.</p>';
+                return;
+            }
+
+            data.forEach(gift => {
+                const item = document.createElement('div');
+                item.className = "p-4 flex justify-between items-center hover:bg-white/5";
+                item.innerHTML = `
+                    <div>
+                        <div class="font-bold text-blue-400">${gift.id}</div>
+                        <div class="text-xs text-slate-500 truncate w-48">${gift.data}</div>
                     </div>
+                    <button onclick="deleteGift('${gift.id}')" class="text-red-500 text-xs font-bold hover:underline">Revoke</button>
                 `;
+                list.appendChild(item);
             });
         }
 
         async function deleteGift(id) {
-            if (confirm("Revoke this gift?")) {
-                await supabase.from('gba_storage').delete().eq('id', id);
+            if (confirm(`Revoke gift ${id}?`)) {
+                await gbaClient.from('gba_storage').delete().eq('id', id);
                 loadGifts();
             }
         }
 
-        // Init
-        if (currentUser) loginSuccess(currentUser);
-        else showPage('landing');
-
+        // Run on load
+        window.onload = () => {
+            if (currentUser) loginSuccess(currentUser);
+            else showPage('landing');
+        };
     </script>
 </body>
 </html>
