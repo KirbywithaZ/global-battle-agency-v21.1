@@ -57,11 +57,13 @@
                 <div class="glass p-6 rounded-2xl">
                     <h3 class="text-lg font-bold mb-4 text-blue-300">Create Mystery Gift</h3>
                     <div class="mb-4 text-xs text-slate-500">
-                        Codes starting with <span class="text-green-400 font-mono">GIFT_</span> are permanent. Others are one-time use.
+                        Codes starting with <span class="text-green-400 font-mono">GIFT_</span> are permanent.
                     </div>
                     <input type="text" id="giftCode" placeholder="GIFT_EXAMPLE" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-sm uppercase outline-none focus:border-blue-500">
                     <textarea id="giftData" rows="4" placeholder="Paste Marshal String..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-xs outline-none focus:border-blue-500"></textarea>
                     <button onclick="uploadGift()" class="w-full bg-blue-600 py-2 rounded-lg font-bold text-sm hover:bg-blue-500 transition">Deploy to Cloud</button>
+                    
+                    <button onclick="checkConnection()" class="mt-4 w-full text-[10px] text-slate-500 hover:text-white uppercase tracking-widest">Test Database Connection</button>
                 </div>
             </div>
             <div class="lg:col-span-2">
@@ -77,12 +79,28 @@
     </section>
 
     <script>
-        // CONFIG - REPLACE THESE
-        const S_URL = 'YOUR_SUPABASE_URL';
-        const S_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        const gbaClient = supabase.createClient(S_URL, S_KEY);
+        // --- 1. CONFIGURATION ---
+        // Ensure these start with https:// and have no extra spaces
+        const S_URL = 'https://YOUR_PROJECT_ID.supabase.co'; 
+        const S_KEY = 'YOUR_ANON_KEY';
+
+        // --- 2. INITIALIZATION ---
+        let gbaClient;
+        try {
+            gbaClient = supabase.createClient(S_URL, S_KEY);
+        } catch (e) {
+            console.error("Initialization error:", e);
+        }
 
         let currentUser = localStorage.getItem('gba_user');
+
+        // --- 3. FUNCTIONS ---
+
+        async function checkConnection() {
+            const { data, error } = await gbaClient.from('gba_mystery_gifts').select('count');
+            if (error) alert("Connection Failed: " + error.message);
+            else alert("Connection Successful! Database is talking to the website.");
+        }
 
         function showPage(pageId) {
             const pages = ['landing', 'login', 'register', 'dashboard'];
@@ -90,17 +108,19 @@
                 const el = document.getElementById(`page-${p}`);
                 if (el) el.classList.add('hidden');
             });
-            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            const target = document.getElementById(`page-${pageId}`);
+            if (target) target.classList.remove('hidden');
             
-            if (pageId === 'dashboard') loadGifts();
+            if (pageId === 'dashboard' && currentUser) loadGifts();
         }
 
         async function handleRegister() {
+            if (!gbaClient) return alert("System not initialized. Check your URL/Key.");
             const user = document.getElementById('regUser').value.trim().toLowerCase();
             if (user.length < 3) return alert("Username too short.");
 
             const { error } = await gbaClient.from('gba_devs').insert([{ username: user }]);
-            if (error) return alert("Error: Username might be taken.");
+            if (error) return alert("Error: " + error.message);
             
             loginSuccess(user);
         }
@@ -132,7 +152,6 @@
             const data = document.getElementById('giftData').value.trim();
             if (!id || !data) return alert("Fill all fields");
 
-            // TABLE UPDATED: Now uses gba_mystery_gifts
             const { error } = await gbaClient.from('gba_mystery_gifts').upsert({ 
                 id: id, 
                 data: data, 
@@ -148,13 +167,13 @@
         }
 
         async function loadGifts() {
-            // TABLE UPDATED: Now uses gba_mystery_gifts
+            if (!currentUser) return;
             const { data, error } = await gbaClient.from('gba_mystery_gifts').select('*').eq('dev_owner', currentUser);
             const list = document.getElementById('giftList');
             list.innerHTML = '';
             
             if (error) {
-                list.innerHTML = `<p class="p-10 text-center text-red-400">Database Error: ${error.message}</p>`;
+                list.innerHTML = `<p class="p-10 text-center text-red-400">Error: ${error.message}</p>`;
                 return;
             }
 
@@ -165,18 +184,18 @@
 
             data.forEach(gift => {
                 const item = document.createElement('div');
-                item.className = "p-4 flex justify-between items-center hover:bg-white/5 group transition";
+                item.className = "p-4 flex justify-between items-center hover:bg-white/5 transition";
                 item.innerHTML = `
                     <div class="flex-1 min-w-0 pr-4">
                         <div class="font-bold text-blue-400 flex items-center gap-2">
                             ${gift.id}
-                            ${gift.id.startsWith('GIFT_') ? '<span class="text-[10px] bg-green-900/40 text-green-400 px-1 rounded">PERMANENT</span>' : ''}
+                            ${gift.id.startsWith('GIFT_') ? '<span class="text-[10px] bg-green-900/40 text-green-400 px-1 rounded">PERM</span>' : ''}
                         </div>
                         <div class="text-xs text-slate-500 truncate font-mono">${gift.data}</div>
                     </div>
                     <div class="flex gap-4">
-                        <button onclick="navigator.clipboard.writeText('${gift.id}'); alert('Code Copied!')" class="text-slate-500 hover:text-white text-xs font-bold">Copy</button>
-                        <button onclick="deleteGift('${gift.id}')" class="text-red-500 text-xs font-bold hover:text-red-300">Revoke</button>
+                        <button onclick="navigator.clipboard.writeText('${gift.id}'); alert('Copied!')" class="text-slate-500 hover:text-white text-xs">Copy</button>
+                        <button onclick="deleteGift('${gift.id}')" class="text-red-500 text-xs hover:text-red-300">Revoke</button>
                     </div>
                 `;
                 list.appendChild(item);
@@ -184,13 +203,13 @@
         }
 
         async function deleteGift(id) {
-            if (confirm(`Are you sure you want to revoke gift ${id}? Players will no longer be able to claim it.`)) {
-                // TABLE UPDATED: Now uses gba_mystery_gifts
+            if (confirm(`Revoke gift ${id}?`)) {
                 await gbaClient.from('gba_mystery_gifts').delete().eq('id', id);
                 loadGifts();
             }
         }
 
+        // --- 4. STARTUP ---
         window.onload = () => {
             if (currentUser) loginSuccess(currentUser);
             else showPage('landing');
