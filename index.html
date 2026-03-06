@@ -32,7 +32,8 @@ border:1px solid rgba(255,255,255,0.08);
 }
 
 .gradient-text{
-background:linear-gradient(135deg,#60a5fa,#a78bfa);
+/* Updated to soft pink gradient */
+background:linear-gradient(135deg,#f9a8d4,#f472b6);
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
 }
@@ -63,9 +64,10 @@ color:white;
 }
 
 .nav-item.active{
-background:#2563eb;
+/* Updated to soft pink active state */
+background:#f472b6;
 color:white;
-box-shadow:0 4px 15px rgba(37,99,235,.3);
+box-shadow:0 4px 15px rgba(244,114,182,.3);
 }
 
 .hidden{display:none!important}
@@ -87,7 +89,7 @@ box-shadow:0 4px 15px rgba(37,99,235,.3);
 <body class="flex min-h-screen">
 
 <div id="loading-screen" class="hidden">
-    <div class="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+    <div class="w-12 h-12 border-4 border-pink-500/20 border-t-pink-500 rounded-full animate-spin mb-4"></div>
     <p class="text-slate-400 animate-pulse">Logging you in...</p>
 </div>
 
@@ -111,7 +113,7 @@ box-shadow:0 4px 15px rgba(37,99,235,.3);
 
     <div class="pt-6 border-t border-white/10">
         <div class="flex items-center gap-3 mb-4 px-2">
-            <div id="userInitial" class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold">?</div>
+            <div id="userInitial" class="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-400 to-pink-600 flex items-center justify-center text-xs font-bold">?</div>
             <div id="displayUser" class="text-sm font-medium truncate">User</div>
         </div>
         <button onclick="logout()" class="w-full text-left text-xs text-red-400 hover:text-red-300 px-2 flex items-center gap-2">
@@ -123,7 +125,7 @@ box-shadow:0 4px 15px rgba(37,99,235,.3);
 <main id="main-content" class="flex-1 transition-all duration-300">
 
     <div id="page-landing" class="hidden max-w-4xl mx-auto py-32 px-6 text-center page-fade">
-        <div class="inline-block px-4 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6">
+        <div class="inline-block px-4 py-1 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-400 text-xs font-bold mb-6">
             v2.1 LIVE
         </div>
         <h1 class="text-6xl md:text-8xl font-black mb-8 leading-tight">
@@ -133,7 +135,7 @@ box-shadow:0 4px 15px rgba(37,99,235,.3);
             The portal for managing cloud assets for Pokémon Essentials.
         </p>
         <div class="flex flex-wrap justify-center gap-6">
-            <button onclick="showPage('login')" class="bg-blue-600 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-blue-500 hover:scale-105 transition active:scale-95 shadow-lg shadow-blue-600/20">
+            <button onclick="showPage('login')" class="bg-pink-600 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-pink-500 hover:scale-105 transition active:scale-95 shadow-lg shadow-pink-600/20">
                 Login to Console
             </button>
             <button onclick="showPage('register')" class="bg-white/5 border border-white/10 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-white/10 transition">
@@ -146,12 +148,12 @@ box-shadow:0 4px 15px rgba(37,99,235,.3);
         <div class="max-w-md mx-auto glass p-10 rounded-[32px]">
             <h2 class="text-3xl font-bold mb-2">Welcome Back</h2>
             <p class="text-slate-400 mb-8 text-sm">Enter developer credentials.</p>
-            <input id="loginUser" type="text" placeholder="Username" class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4 outline-none focus:ring-2 ring-blue-500/50">
-            <button onclick="handleLogin()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold hover:bg-blue-500">
+            <input id="loginUser" type="text" placeholder="Username" class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4 outline-none focus:ring-2 ring-pink-500/50">
+            <button onclick="handleLogin()" class="w-full bg-pink-600 py-4 rounded-2xl font-bold hover:bg-pink-500">
                 Enter Crib
             </button>
             <p class="mt-6 text-center text-xs text-slate-500">
-                Need an account? <span onclick="showPage('register')" class="text-blue-400 cursor-pointer">Join the Agency</span>
+                Need an account? <span onclick="showPage('register')" class="text-pink-400 cursor-pointer hover:text-pink-300">Join the Agency</span>
             </p>
         </div>
     </div>
@@ -160,7 +162,7 @@ box-shadow:0 4px 15px rgba(37,99,235,.3);
         <div class="max-w-md mx-auto glass p-10 rounded-[32px]">
             <h2 class="text-3xl font-bold mb-2">Join the Agency</h2>
             <p class="text-slate-400 mb-8 text-sm">Start the cloud development journey.</p>
-            <input id="regUser" type="text" placeholder="Desired Username" class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4">
+            <input id="regUser" type="text" placeholder="Desired Username" class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4 outline-none focus:ring-2 ring-pink-500/50">
             <button onclick="handleRegister()" class="w-full bg-green-600 py-4 rounded-2xl font-bold hover:bg-green-500">
                 Create Account
             </button>
@@ -171,8 +173,8 @@ box-shadow:0 4px 15px rgba(37,99,235,.3);
         <h2 class="text-4xl font-extrabold mb-2">Cozy Home</h2>
         <p class="text-slate-400 mb-10 italic">Where the Tinkatons relax and the cloud syncs perfectly.</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div onclick="showPage('dashboard')" class="glass p-8 rounded-3xl group hover:border-blue-500/50 transition cursor-pointer">
-                <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6 group-hover:scale-110 transition">
+            <div onclick="showPage('dashboard')" class="glass p-8 rounded-3xl group hover:border-pink-500/50 transition cursor-pointer">
+                <div class="w-12 h-12 bg-pink-500/10 rounded-2xl flex items-center justify-center text-pink-400 mb-6 group-hover:scale-110 transition">
                     <i data-lucide="gift"></i>
                 </div>
                 <h3 class="text-xl font-bold mb-2">Mystery Gift Console</h3>
@@ -187,20 +189,20 @@ box-shadow:0 4px 15px rgba(37,99,235,.3);
             <div class="glass p-6 rounded-3xl">
                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Gift Code (Max 13 chars)</label>
                 <div class="relative flex items-center mb-4">
-                    <span class="absolute left-4 font-bold text-blue-400">GIFT_</span>
+                    <span class="absolute left-4 font-bold text-pink-400">GIFT_</span>
                     <input id="giftCode" maxlength="13" placeholder="SUMMER2026"
-                    class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 pl-16 outline-none focus:ring-1 ring-blue-500">
+                    class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 pl-16 outline-none focus:ring-1 ring-pink-500">
                 </div>
 
                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Internal Description</label>
                 <input id="giftDesc" placeholder="e.g. Level 50 Shiny Eevee Event"
-                class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4 outline-none">
+                class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4 outline-none focus:ring-1 ring-pink-500">
 
                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Script Data</label>
                 <textarea id="giftData" rows="4" placeholder="Enter Essentials script data here..."
-                class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4 outline-none focus:ring-1 ring-blue-500"></textarea>
+                class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4 outline-none focus:ring-1 ring-pink-500"></textarea>
 
-                <button onclick="uploadGift()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold hover:bg-blue-500 transition shadow-lg shadow-blue-900/20">
+                <button onclick="uploadGift()" class="w-full bg-pink-600 py-4 rounded-2xl font-bold hover:bg-pink-500 transition shadow-lg shadow-pink-900/20">
                     Deploy to Cloud
                 </button>
             </div>
@@ -210,7 +212,7 @@ box-shadow:0 4px 15px rgba(37,99,235,.3);
                     <h3 class="font-bold">Live Registry</h3>
                     <button onclick="loadGifts()" class="text-xs bg-white/10 px-3 py-1 rounded-lg hover:bg-white/20 transition">Refresh</button>
                 </div>
-                <div id="giftList" class="divide-y divide-white/5 overflow-y-auto max-h-[600px]"></div>
+                <div id="giftList" class="divide-y divide-white/5 overflow-y-auto max-h-[600px] flex flex-col grow"></div>
             </div>
         </div>
     </div>
@@ -313,15 +315,17 @@ async function uploadGift(){
  */
 async function loadGifts(){
     const list=document.getElementById('giftList')
-    list.innerHTML='<div class="p-10 text-center text-slate-500">Syncing with cloud...</div>'
+    // Updated loading text placement
+    list.innerHTML='<div class="flex-grow flex items-center justify-center p-10 text-center text-slate-500">Syncing with cloud...</div>'
 
     const {data,error}=await gbaClient
         .from('gba_mystery_gifts')
         .select('*')
         .eq('dev_owner',currentUser)
 
-    if(error){ list.innerHTML='<div class="p-10 text-red-400">Error loading registry.</div>'; return; }
-    if(!data||data.length===0){ list.innerHTML='<div class="p-10 text-center text-slate-500">No active gifts found.</div>'; return; }
+    if(error){ list.innerHTML='<div class="flex-grow flex items-center justify-center p-10 text-red-400">Error loading registry.</div>'; return; }
+    // Updated empty text placement to use flex centering
+    if(!data||data.length===0){ list.innerHTML='<div class="flex-grow flex items-center justify-center p-10 text-center text-slate-500 italic">No active gifts found.</div>'; return; }
 
     list.innerHTML=''
     data.forEach(gift=>{
@@ -330,7 +334,7 @@ async function loadGifts(){
         item.innerHTML=`
             <div class="flex-1 pr-4">
                 <div class="flex items-center gap-2 mb-1">
-                    <span class="font-mono font-bold text-blue-400">${gift.id}</span>
+                    <span class="font-mono font-bold text-pink-400">${gift.id}</span>
                 </div>
                 <div class="text-sm font-semibold text-slate-200">${gift.description || 'No description'}</div>
                 <div class="text-[10px] text-slate-500 font-mono mt-2 bg-black/30 p-2 rounded border border-white/5 truncate">${gift.data}</div>
