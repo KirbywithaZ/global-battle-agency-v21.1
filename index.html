@@ -3,153 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GBA | Global Battle Agency</title>
+    <title>Kirb-Z's Cozy Crib | GBA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .gradient-text { background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        
+        body { 
+            background: #0a0f1e; 
+            color: white; 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .sidebar { background: #111827; border-right: 1px solid rgba(255,255,255,0.05); }
+        .glass { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .gradient-text { background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* Smooth Animations */
+        .page-fade { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item { transition: all 0.2s; cursor: pointer; border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; color: #94a3b8; }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-item.active { background: #2563eb; color: white; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); }
+
         .hidden { display: none !important; }
     </style>
 </head>
-<body class="min-h-screen">
+<body class="flex min-h-screen">
 
-    <nav class="p-6 flex justify-between items-center max-w-6xl mx-auto">
-        <div class="text-2xl font-bold gradient-text cursor-pointer" onclick="showPage('landing')">GBA.Network</div>
-        <div id="navActions">
-            <button onclick="showPage('login')" class="text-slate-300 hover:text-white mr-4">Login</button>
-            <button onclick="showPage('register')" class="bg-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-500">Join Agency</button>
+    <aside id="sidebar" class="hidden w-64 sidebar flex-col p-6 fixed h-full z-50">
+        <div class="mb-10 px-2">
+            <h1 class="text-xl font-extrabold gradient-text">Cozy Crib</h1>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest">GBA Cloud Manager</p>
         </div>
-        <div id="navUser" class="hidden flex items-center gap-4">
-            <span id="displayUser" class="text-blue-400 font-mono"></span>
-            <button onclick="logout()" class="text-xs text-slate-500 hover:text-red-400 underline">Logout</button>
-        </div>
-    </nav>
 
-    <section id="page-landing" class="max-w-4xl mx-auto py-20 px-6 text-center">
-        <h1 class="text-5xl md:text-7xl font-extrabold mb-6">Connect Your <span class="gradient-text">Essentials</span> Game.</h1>
-        <p class="text-slate-400 text-xl mb-10">Cloud infrastructure for Pokémon Essentials v20/v21.</p>
-        <div class="flex flex-wrap justify-center gap-4">
-            <button onclick="showPage('register')" class="bg-white text-black px-8 py-3 rounded-full font-bold text-lg hover:bg-slate-200">Get Started</button>
-        </div>
-    </section>
-
-    <section id="page-login" class="hidden max-w-md mx-auto py-20 px-6">
-        <div class="glass p-8 rounded-3xl">
-            <h2 class="text-2xl font-bold mb-6 text-center">Developer Login</h2>
-            <input type="text" id="loginUser" placeholder="Username" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4 outline-none focus:border-blue-500">
-            <button onclick="handleLogin()" class="w-full bg-blue-600 py-4 rounded-xl font-bold hover:bg-blue-500">Login</button>
-        </div>
-    </section>
-
-    <section id="page-register" class="hidden max-w-md mx-auto py-20 px-6">
-        <div class="glass p-8 rounded-3xl">
-            <h2 class="text-2xl font-bold mb-6 text-center">Register</h2>
-            <input type="text" id="regUser" placeholder="Desired Username" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4 outline-none focus:border-green-500">
-            <button onclick="handleRegister()" class="w-full bg-green-600 py-4 rounded-xl font-bold hover:bg-green-500">Create Account</button>
-        </div>
-    </section>
-
-    <section id="page-dashboard" class="hidden max-w-5xl mx-auto py-10 px-6">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1">
-                <div class="glass p-6 rounded-2xl">
-                    <h3 class="text-lg font-bold mb-4 text-blue-300">Create Mystery Gift</h3>
-                    <input type="text" id="giftCode" placeholder="GIFT_EXAMPLE" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-sm uppercase outline-none focus:border-blue-500">
-                    <textarea id="giftData" rows="4" placeholder="Paste Marshal String..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-xs outline-none focus:border-blue-500"></textarea>
-                    <button onclick="uploadGift()" class="w-full bg-blue-600 py-2 rounded-lg font-bold text-sm hover:bg-blue-500 transition">Deploy to Cloud</button>
-                    <button onclick="checkConnection()" class="mt-4 w-full text-[10px] text-slate-500 hover:text-white uppercase tracking-widest">Test Connection</button>
-                </div>
+        <nav class="flex-1 space-y-2">
+            <div onclick="showPage('home')" id="btn-home" class="nav-item active">
+                <i data-lucide="home" class="w-5 h-5"></i> Home
             </div>
-            <div class="lg:col-span-2">
-                <div class="glass rounded-2xl overflow-hidden">
-                    <div class="p-6 bg-white/5 border-b border-white/5 flex justify-between items-center">
-                        <h3 class="font-bold">Active Live-Gifts</h3>
-                        <button onclick="loadGifts()" class="text-xs text-slate-400 hover:text-white">Refresh List</button>
+            <div onclick="showPage('dashboard')" id="btn-dashboard" class="nav-item">
+                <i data-lucide="gift" class="w-5 h-5"></i> Mystery Gifts
+            </div>
+            <div class="nav-item opacity-50 cursor-not-allowed">
+                <i data-lucide="database" class="w-5 h-5"></i> GTS Manager
+            </div>
+        </nav>
+
+        <div class="pt-6 border-t border-white/10">
+            <div class="flex items-center gap-3 mb-4 px-2">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold" id="userInitial">?</div>
+                <div class="text-sm font-medium truncate" id="displayUser">User</div>
+            </div>
+            <button onclick="logout()" class="w-full text-left text-xs text-red-400 hover:text-red-300 px-2 flex items-center gap-2">
+                <i data-lucide="log-out" class="w-3 h-3"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <main id="main-content" class="flex-1 transition-all duration-300">
+        
+        <div id="page-landing" class="max-w-4xl mx-auto py-32 px-6 text-center page-fade">
+            <div class="inline-block px-4 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6">v2.0 LIVE</div>
+            <h1 class="text-6xl md:text-8xl font-black mb-8 leading-tight">Welcome to <br><span class="gradient-text">The Cozy Crib.</span></h1>
+            <p class="text-slate-400 text-xl mb-12 max-w-2xl mx-auto">Your portal for managing the Global Battle Agency cloud assets for Pokémon Essentials.</p>
+            <div class="flex flex-wrap justify-center gap-6">
+                <button onclick="showPage('login')" class="bg-blue-600 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-blue-500 hover:scale-105 transition active:scale-95 shadow-lg shadow-blue-600/20">Login to Console</button>
+                <button onclick="showPage('register')" class="bg-white/5 border border-white/10 px-10 py-4 rounded-2xl font-bold text-lg hover:bg-white/10 transition">Register</button>
+            </div>
+        </div>
+
+        <div id="page-login" class="hidden py-32 page-fade">
+            <div class="max-w-md mx-auto glass p-10 rounded-[32px]">
+                <h2 class="text-3xl font-bold mb-2">Welcome Back</h2>
+                <p class="text-slate-400 mb-8 text-sm">Enter your developer credentials.</p>
+                <input type="text" id="loginUser" placeholder="Username" class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4 outline-none focus:ring-2 ring-blue-500/50 transition">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold hover:bg-blue-500 transition shadow-lg shadow-blue-600/20">Enter Crib</button>
+                <p class="mt-6 text-center text-xs text-slate-500">Need an account? <span class="text-blue-400 cursor-pointer" onclick="showPage('register')">Join the Agency</span></p>
+            </div>
+        </div>
+
+        <div id="page-register" class="hidden py-32 page-fade">
+            <div class="max-w-md mx-auto glass p-10 rounded-[32px]">
+                <h2 class="text-3xl font-bold mb-2">Join the Agency</h2>
+                <p class="text-slate-400 mb-8 text-sm">Start your cloud development journey.</p>
+                <input type="text" id="regUser" placeholder="Desired Username" class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4 outline-none focus:ring-2 ring-green-500/50 transition">
+                <button onclick="handleRegister()" class="w-full bg-green-600 py-4 rounded-2xl font-bold hover:bg-green-500 transition shadow-lg shadow-green-600/20">Create Account</button>
+            </div>
+        </div>
+
+        <div id="page-home" class="hidden p-10 page-fade max-w-6xl mx-auto">
+            <h2 class="text-4xl font-extrabold mb-2">Cozy Home</h2>
+            <p class="text-slate-400 mb-10 italic">"Where the Tinkatons relax and the cloud syncs perfectly."</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass p-8 rounded-3xl group hover:border-blue-500/50 transition cursor-pointer" onclick="showPage('dashboard')">
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6 group-hover:scale-110 transition">
+                        <i data-lucide="gift"></i>
                     </div>
-                    <div id="giftList" class="divide-y divide-white/5"></div>
+                    <h3 class="text-xl font-bold mb-2">Mystery Gift Console</h3>
+                    <p class="text-slate-400 text-sm">Deploy new items, Pokémon, or event codes directly to player games.</p>
+                </div>
+                <div class="glass p-8 rounded-3xl opacity-50 grayscale">
+                    <div class="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400 mb-6">
+                        <i data-lucide="users"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Player Analytics</h3>
+                    <p class="text-slate-400 text-sm">Coming Soon: See how many players are active in your GBA network.</p>
                 </div>
             </div>
         </div>
-    </section>
+
+        <div id="page-dashboard" class="hidden p-10 page-fade max-w-6xl mx-auto">
+            <div class="flex justify-between items-end mb-10">
+                <div>
+                    <h2 class="text-4xl font-extrabold mb-2">Gift Generator</h2>
+                    <p class="text-slate-400">Deploy live events to the Global Battle Agency.</p>
+                </div>
+                <button onclick="checkConnection()" class="text-[10px] text-slate-500 hover:text-white border border-white/10 px-4 py-2 rounded-full uppercase tracking-widest">System Status</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1">
+                    <div class="glass p-6 rounded-3xl sticky top-10">
+                        <h3 class="text-sm font-bold mb-4 text-blue-300 uppercase tracking-widest">New Event</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-[10px] text-slate-500 ml-2 mb-1 block">EVENT CODE (Auto-prefixed with GIFT_)</label>
+                                <input type="text" id="giftCode" placeholder="WINDSANDWAVES" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm uppercase outline-none focus:border-blue-500 transition">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 ml-2 mb-1 block">MARSHAL DATA STRING</label>
+                                <textarea id="giftData" rows="6" placeholder="Paste string from RMXP Console..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs font-mono outline-none focus:border-blue-500 transition"></textarea>
+                            </div>
+                            <button onclick="uploadGift()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold text-sm hover:bg-blue-500 hover:scale-[1.02] active:scale-[0.98] transition shadow-lg shadow-blue-600/20">Deploy to Cloud</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <div class="glass rounded-3xl overflow-hidden">
+                        <div class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                            <h3 class="font-bold">Live GBA Registry</h3>
+                            <button onclick="loadGifts()" class="p-2 hover:bg-white/10 rounded-lg transition"><i data-lucide="rotate-cw" class="w-4 h-4 text-slate-400"></i></button>
+                        </div>
+                        <div id="giftList" class="divide-y divide-white/5 max-h-[600px] overflow-y-auto">
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 
     <script>
-        // --- 1. CONFIGURATION ---
-        // REPLACE THESE with your real Supabase URL and Anon Key
+        // --- CONFIG ---
         const S_URL = 'https://ekxlezggxgmcfmyrfzcw.supabase.co'; 
         const S_KEY = 'sb_publishable_tCmuvNXgouyeajXYOEFZ1A_nQF9B_bH';
-
-        // --- 2. INITIALIZATION ---
-        let gbaClient = null;
-
-        // Initialize only if URL is valid to prevent silent crashes
-        if (S_URL.includes('https://')) {
-            try {
-                gbaClient = supabase.createClient(S_URL, S_KEY);
-                console.log("GBA System: Supabase Client Initialized.");
-            } catch (e) {
-                console.error("GBA System: Initialization Error", e);
-            }
-        } else {
-            console.warn("GBA System: Invalid URL. Please update S_URL in the script.");
-        }
-
+        let gbaClient = supabase.createClient(S_URL, S_KEY);
         let currentUser = localStorage.getItem('gba_user');
 
-        // --- 3. CORE FUNCTIONS ---
+        // Initialize Icons
+        lucide.createIcons();
 
-        async function checkConnection() {
-            if (!gbaClient) return alert("System Error: Check S_URL and S_KEY.");
-            const { error } = await gbaClient.from('gba_mystery_gifts').select('id').limit(1);
-            if (error) alert("Connection Failed: " + error.message);
-            else alert("Connection Successful!");
-        }
-
+        // --- NAVIGATION ---
         function showPage(pageId) {
-            const pages = ['landing', 'login', 'register', 'dashboard'];
+            const pages = ['landing', 'login', 'register', 'dashboard', 'home'];
             pages.forEach(p => {
                 const el = document.getElementById(`page-${p}`);
                 if (el) el.classList.add('hidden');
+                const btn = document.getElementById(`btn-${p}`);
+                if (btn) btn.classList.remove('active');
             });
-            const target = document.getElementById(`page-${pageId}`);
-            if (target) target.classList.remove('hidden');
-            if (pageId === 'dashboard' && currentUser) loadGifts();
+
+            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`btn-${pageId}`);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            if (pageId === 'dashboard') loadGifts();
+            
+            // Adjust sidebar visibility
+            const sidebar = document.getElementById('sidebar');
+            const main = document.getElementById('main-content');
+            if (['home', 'dashboard'].includes(pageId)) {
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex');
+                main.classList.add('ml-64');
+            } else {
+                sidebar.classList.add('hidden');
+                main.classList.remove('ml-64');
+            }
+        }
+
+        // --- AUTH ---
+        function loginSuccess(user) {
+            currentUser = user;
+            localStorage.setItem('gba_user', user);
+            document.getElementById('displayUser').innerText = user;
+            document.getElementById('userInitial').innerText = user.charAt(0).toUpperCase();
+            showPage('home');
         }
 
         async function handleRegister() {
-            if (!gbaClient) return alert("CRITICAL: Update your S_URL and S_KEY in the code first!");
-            
             const user = document.getElementById('regUser').value.trim().toLowerCase();
             if (user.length < 3) return alert("Username too short.");
-
             const { error } = await gbaClient.from('gba_devs').insert([{ username: user }]);
-            
-            if (error) {
-                console.error(error);
-                return alert("Registration Failed: " + error.message);
-            }
-            
+            if (error) return alert("Fail: " + error.message);
             loginSuccess(user);
         }
 
         async function handleLogin() {
-            if (!gbaClient) return alert("CRITICAL: Update your S_URL and S_KEY in the code first!");
-            
             const user = document.getElementById('loginUser').value.trim().toLowerCase();
             const { data, error } = await gbaClient.from('gba_devs').select('*').eq('username', user).single();
-            
             if (!data || error) return alert("User not found.");
             loginSuccess(user);
-        }
-
-        function loginSuccess(user) {
-            currentUser = user;
-            localStorage.setItem('gba_user', user);
-            document.getElementById('navActions').classList.add('hidden');
-            document.getElementById('navUser').classList.remove('hidden');
-            document.getElementById('displayUser').innerText = user;
-            showPage('dashboard');
         }
 
         function logout() {
@@ -157,13 +228,17 @@
             window.location.reload();
         }
 
+        // --- DATABASE OPS ---
         async function uploadGift() {
-            const id = document.getElementById('giftCode').value.toUpperCase().trim();
+            const codeInput = document.getElementById('giftCode').value.toUpperCase().trim();
             const data = document.getElementById('giftData').value.trim();
-            if (!id || !data) return alert("Fill all fields");
+            if (!codeInput || !data) return alert("Fill all fields");
+
+            // INTERNAL ID logic (Add GIFT_ if not there)
+            const finalId = codeInput.startsWith("GIFT_") ? codeInput : "GIFT_" + codeInput;
 
             const { error } = await gbaClient.from('gba_mystery_gifts').upsert({ 
-                id: id, 
+                id: finalId, 
                 data: data, 
                 dev_owner: currentUser 
             });
@@ -173,39 +248,50 @@
                 document.getElementById('giftCode').value = "";
                 document.getElementById('giftData').value = "";
                 loadGifts();
+                alert("Deployed successfully!");
             }
         }
 
         async function loadGifts() {
-            const { data, error } = await gbaClient.from('gba_mystery_gifts').select('*').eq('dev_owner', currentUser);
             const list = document.getElementById('giftList');
+            list.innerHTML = '<div class="p-10 text-center text-slate-500 animate-pulse">Scanning Cloud...</div>';
+
+            const { data, error } = await gbaClient.from('gba_mystery_gifts').select('*').eq('dev_owner', currentUser);
             list.innerHTML = '';
             
-            if (error) return console.error(error);
-            if (!data || data.length === 0) {
-                list.innerHTML = '<p class="p-10 text-center text-slate-500">No active gifts.</p>';
+            if (error || !data || data.length === 0) {
+                list.innerHTML = '<div class="p-20 text-center"><i data-lucide="package-search" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i><p class="text-slate-500 text-sm">No live gifts found for your account.</p></div>';
+                lucide.createIcons();
                 return;
             }
 
             data.forEach(gift => {
                 const item = document.createElement('div');
-                item.className = "p-4 flex justify-between items-center hover:bg-white/5";
+                item.className = "p-6 flex justify-between items-center hover:bg-white/[0.02] transition group";
                 item.innerHTML = `
-                    <div class="flex-1 min-w-0 pr-4">
-                        <div class="font-bold text-blue-400">${gift.id}</div>
-                        <div class="text-xs text-slate-500 truncate font-mono">${gift.data}</div>
+                    <div class="flex-1 min-w-0 pr-8">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-blue-400 font-bold tracking-tight text-lg">${gift.id}</span>
+                            <span class="text-[9px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-bold border border-blue-500/20">LIVE</span>
+                        </div>
+                        <div class="text-[10px] text-slate-500 truncate font-mono bg-slate-900/50 p-2 rounded-lg border border-white/5">DATA: ${gift.data}</div>
                     </div>
-                    <button onclick="deleteGift('${gift.id}')" class="text-red-500 text-xs font-bold hover:underline">Revoke</button>
+                    <button onclick="deleteGift('${gift.id}')" class="opacity-0 group-hover:opacity-100 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all">Revoke</button>
                 `;
                 list.appendChild(item);
             });
         }
 
         async function deleteGift(id) {
-            if (confirm(`Revoke gift ${id}?`)) {
+            if (confirm(`Permanentely remove ${id} from the cloud?`)) {
                 await gbaClient.from('gba_mystery_gifts').delete().eq('id', id);
                 loadGifts();
             }
+        }
+
+        async function checkConnection() {
+            const { error } = await gbaClient.from('gba_mystery_gifts').select('id').limit(1);
+            alert(error ? "Connection Offline: " + error.message : "System Online. Tinker on!");
         }
 
         window.onload = () => {
