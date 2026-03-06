@@ -56,14 +56,10 @@
             <div class="lg:col-span-1">
                 <div class="glass p-6 rounded-2xl">
                     <h3 class="text-lg font-bold mb-4 text-blue-300">Create Mystery Gift</h3>
-                    <div class="mb-4 text-xs text-slate-500">
-                        Codes starting with <span class="text-green-400 font-mono">GIFT_</span> are permanent.
-                    </div>
                     <input type="text" id="giftCode" placeholder="GIFT_EXAMPLE" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-sm uppercase outline-none focus:border-blue-500">
                     <textarea id="giftData" rows="4" placeholder="Paste Marshal String..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 mb-3 text-xs outline-none focus:border-blue-500"></textarea>
                     <button onclick="uploadGift()" class="w-full bg-blue-600 py-2 rounded-lg font-bold text-sm hover:bg-blue-500 transition">Deploy to Cloud</button>
-                    
-                    <button onclick="checkConnection()" class="mt-4 w-full text-[10px] text-slate-500 hover:text-white uppercase tracking-widest">Test Database Connection</button>
+                    <button onclick="checkConnection()" class="mt-4 w-full text-[10px] text-slate-500 hover:text-white uppercase tracking-widest">Test Connection</button>
                 </div>
             </div>
             <div class="lg:col-span-2">
@@ -80,26 +76,34 @@
 
     <script>
         // --- 1. CONFIGURATION ---
-        // Ensure these start with https:// and have no extra spaces
+        // REPLACE THESE with your real Supabase URL and Anon Key
         const S_URL = 'https://YOUR_PROJECT_ID.supabase.co'; 
         const S_KEY = 'YOUR_ANON_KEY';
 
         // --- 2. INITIALIZATION ---
-        let gbaClient;
-        try {
-            gbaClient = supabase.createClient(S_URL, S_KEY);
-        } catch (e) {
-            console.error("Initialization error:", e);
+        let gbaClient = null;
+
+        // Initialize only if URL is valid to prevent silent crashes
+        if (S_URL.includes('https://')) {
+            try {
+                gbaClient = supabase.createClient(S_URL, S_KEY);
+                console.log("GBA System: Supabase Client Initialized.");
+            } catch (e) {
+                console.error("GBA System: Initialization Error", e);
+            }
+        } else {
+            console.warn("GBA System: Invalid URL. Please update S_URL in the script.");
         }
 
         let currentUser = localStorage.getItem('gba_user');
 
-        // --- 3. FUNCTIONS ---
+        // --- 3. CORE FUNCTIONS ---
 
         async function checkConnection() {
-            const { data, error } = await gbaClient.from('gba_mystery_gifts').select('count');
+            if (!gbaClient) return alert("System Error: Check S_URL and S_KEY.");
+            const { error } = await gbaClient.from('gba_mystery_gifts').select('id').limit(1);
             if (error) alert("Connection Failed: " + error.message);
-            else alert("Connection Successful! Database is talking to the website.");
+            else alert("Connection Successful!");
         }
 
         function showPage(pageId) {
@@ -110,22 +114,28 @@
             });
             const target = document.getElementById(`page-${pageId}`);
             if (target) target.classList.remove('hidden');
-            
             if (pageId === 'dashboard' && currentUser) loadGifts();
         }
 
         async function handleRegister() {
-            if (!gbaClient) return alert("System not initialized. Check your URL/Key.");
+            if (!gbaClient) return alert("CRITICAL: Update your S_URL and S_KEY in the code first!");
+            
             const user = document.getElementById('regUser').value.trim().toLowerCase();
             if (user.length < 3) return alert("Username too short.");
 
             const { error } = await gbaClient.from('gba_devs').insert([{ username: user }]);
-            if (error) return alert("Error: " + error.message);
+            
+            if (error) {
+                console.error(error);
+                return alert("Registration Failed: " + error.message);
+            }
             
             loginSuccess(user);
         }
 
         async function handleLogin() {
+            if (!gbaClient) return alert("CRITICAL: Update your S_URL and S_KEY in the code first!");
+            
             const user = document.getElementById('loginUser').value.trim().toLowerCase();
             const { data, error } = await gbaClient.from('gba_devs').select('*').eq('username', user).single();
             
@@ -167,36 +177,25 @@
         }
 
         async function loadGifts() {
-            if (!currentUser) return;
             const { data, error } = await gbaClient.from('gba_mystery_gifts').select('*').eq('dev_owner', currentUser);
             const list = document.getElementById('giftList');
             list.innerHTML = '';
             
-            if (error) {
-                list.innerHTML = `<p class="p-10 text-center text-red-400">Error: ${error.message}</p>`;
-                return;
-            }
-
+            if (error) return console.error(error);
             if (!data || data.length === 0) {
-                list.innerHTML = '<p class="p-10 text-center text-slate-500">No active gifts found.</p>';
+                list.innerHTML = '<p class="p-10 text-center text-slate-500">No active gifts.</p>';
                 return;
             }
 
             data.forEach(gift => {
                 const item = document.createElement('div');
-                item.className = "p-4 flex justify-between items-center hover:bg-white/5 transition";
+                item.className = "p-4 flex justify-between items-center hover:bg-white/5";
                 item.innerHTML = `
                     <div class="flex-1 min-w-0 pr-4">
-                        <div class="font-bold text-blue-400 flex items-center gap-2">
-                            ${gift.id}
-                            ${gift.id.startsWith('GIFT_') ? '<span class="text-[10px] bg-green-900/40 text-green-400 px-1 rounded">PERM</span>' : ''}
-                        </div>
+                        <div class="font-bold text-blue-400">${gift.id}</div>
                         <div class="text-xs text-slate-500 truncate font-mono">${gift.data}</div>
                     </div>
-                    <div class="flex gap-4">
-                        <button onclick="navigator.clipboard.writeText('${gift.id}'); alert('Copied!')" class="text-slate-500 hover:text-white text-xs">Copy</button>
-                        <button onclick="deleteGift('${gift.id}')" class="text-red-500 text-xs hover:text-red-300">Revoke</button>
-                    </div>
+                    <button onclick="deleteGift('${gift.id}')" class="text-red-500 text-xs font-bold hover:underline">Revoke</button>
                 `;
                 list.appendChild(item);
             });
@@ -209,7 +208,6 @@
             }
         }
 
-        // --- 4. STARTUP ---
         window.onload = () => {
             if (currentUser) loginSuccess(currentUser);
             else showPage('landing');
