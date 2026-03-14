@@ -1,5 +1,5 @@
 #===============================================================================
-# Global Battle Agency (GBA) / Online Storage Module (v21.1)
+# Global Battle Agency (GBA) / Online Storage (v21.1)
 #===============================================================================
 
 module GlobalBattleAgency
